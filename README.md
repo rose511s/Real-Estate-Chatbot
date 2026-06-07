@@ -23,6 +23,7 @@ The Problem: When I was rapidly saving or opening properties, React started thro
    The Solution: I audited my local Git configuration, cleaned out older Windows Credential Manager entries to force modern browser GitHub authentication, and then I mapped the environment variables properly (for example REACT_APP_BACKEND_URL). That meant the live React site could point to the live Node server instead of still trying localhost, which was the whole point in the first place.
 <img width="1888" height="864" alt="Screenshot 2026-06-07 224150" src="https://github.com/user-attachments/assets/73aafd59-f85a-43e7-ad9e-7fe6114d3b60" />
 <img width="1886" height="857" alt="Screenshot 2026-06-07 224240" src="https://github.com/user-attachments/assets/1b589871-5b25-4b4f-8c8d-5eb1e160ef60" />
+<img width="1868" height="871" alt="Screenshot 2026-06-07 230111" src="https://github.com/user-attachments/assets/ce81e920-95a6-40a2-941c-4b9bcea9cbd0" />
 
 
 Next Steps & Product Roadmap While the core architecture is rock solid, the next phase of development focuses on advanced AI orchestration and elevated UX: LLM NLP Integration: Upgrading the chatbot from keyword filtering to a true Natural Language Processing engine (via OpenAI) to understand complex user intent and context. Real-Time Dynamic Search: Implementing keystroke-level filtering so properties update instantly as the user types.Side-by-Side Comparison: Building a comparison matrix modal allowing users to stack multiple properties to evaluate price, square footage, and amenities at a glance.
