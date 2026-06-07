@@ -21,7 +21,11 @@ function App() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [step, setStep] = useState("location");
+ const [collectedInfo, setCollectedInfo] = useState({
+   location: "",
+   budget: "",
+   bedrooms: "",
+ });
   const [activeTab, setActiveTab] = useState("search");
 
   const [filters, setFilters] = useState({
@@ -113,70 +117,44 @@ function App() {
 
   const handleRefresh = async () => {
     setProperties([]);
-    setStep("location");
-    setFilters({ location: "", maxPrice: "", bedrooms: "" });
+    setCollectedInfo({ location: "", budget: "", bedrooms: "" }); // Reset tracker
     setMessages([
-      {
-        sender: "bot",
-        text: "Hello! I am Agent Mira, your AI real estate assistant. What city are you looking to buy a home in? (e.g., New York, Miami, Austin)",
-      },
+      { sender: "bot", text: "Hello! What city are you looking in?" },
     ]);
-    setInput("");
     setActiveTab("search");
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  e.preventDefault();
+  if (!input.trim()) return;
 
-    const userText = input.trim();
-    setMessages((prev) => [...prev, { sender: "user", text: userText }]);
-    setInput("");
+  const userText = input.trim();
+  setMessages((prev) => [...prev, { sender: "user", text: userText }]);
+  setInput("");
 
-    let updatedFilters = { ...filters };
-
-    if (step === "location") {
-      updatedFilters.location = userText;
-      setFilters(updatedFilters);
-      setStep("budget");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: `Got it, ${userText}. What is your maximum budget in USD? (e.g., 500000)`,
-        },
-      ]);
-    } else if (step === "budget") {
-      updatedFilters.maxPrice = userText;
-      setFilters(updatedFilters);
-      setStep("bedrooms");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: "Perfect. How many bedrooms do you need? (e.g., 1, 2, 3, 4)",
-        },
-      ]);
-    } else if (step === "bedrooms") {
-      updatedFilters.bedrooms = userText;
-      setFilters(updatedFilters);
-
-      setStep("amenity");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "bot",
-          text: "Almost done! Any specific amenities you want? (e.g., Gym, Pool, Balcony, or type 'none')",
-        },
-      ]);
-    } else if (step === "amenity") {
-      updatedFilters.amenity =
-        userText.toLowerCase() === "none" ? "" : userText;
-      setFilters(updatedFilters);
-      setStep("results");
-      await fetchProperties(updatedFilters);
-    }
-  };
+    
+  if (!collectedInfo.location) {
+    setCollectedInfo(prev => ({ ...prev, location: userText }));
+    setMessages(prev => [...prev, { sender: "bot", text: "Got it! Now, what is your maximum budget?" }]);
+  } else if (!collectedInfo.budget) {
+    setCollectedInfo(prev => ({ ...prev, budget: userText }));
+    setMessages(prev => [...prev, { sender: "bot", text: "Perfect. How many bedrooms do you need?" }]);
+  } else if (!collectedInfo.bedrooms) {
+    setCollectedInfo(prev => ({ ...prev, bedrooms: userText }));
+    setMessages(prev => [...prev, { sender: "bot", text: "One last thing: Do you have a specific amenity in mind? (e.g., pool, gym, parking)" }]);
+  } else if (!collectedInfo.amenity) {
+    const finalAmenity = userText;
+    setCollectedInfo(prev => ({ ...prev, amenity: finalAmenity }));
+    setMessages(prev => [...prev, { sender: "bot", text: "Searching for your perfect home..." }]);
+    
+    fetchProperties({ 
+      location: collectedInfo.location, 
+      maxPrice: collectedInfo.budget, 
+      bedrooms: collectedInfo.bedrooms,
+      amenity: finalAmenity 
+    });
+  }
+};
 
   const saveProperty = async (id) => {
     try {
@@ -238,28 +216,26 @@ function App() {
 
       <div className="main-content">
         <div className="chat-window">
-          <div className="messages-log">
-            {messages.map((msg, index) => (
-              <div key={index} className={`message-row ${msg.sender}`}>
-                <div className="message-bubble">{msg.text}</div>
-              </div>
-            ))}
-          </div>
+  <div className="messages-log">
+    {messages.map((msg, index) => (
+      <div key={index} className={`message-row ${msg.sender}`}>
+        <div className="message-bubble">{msg.text}</div>
+      </div>
+    ))}
+  </div>
 
-          {step !== "results" && (
-            <form onSubmit={handleSend} className="input-form">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your response here..."
-              />
-              <button type="submit">
-                <Send size={18} />
-              </button>
-            </form>
-          )}
-        </div>
+  <form onSubmit={handleSend} className="input-form">
+    <input
+      type="text"
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+      placeholder="Type your response here..."
+    />
+    <button type="submit">
+      <Send size={18} />
+    </button>
+  </form>
+</div>
 
         <div className="results-window">
           {activeTab === "search" ? (

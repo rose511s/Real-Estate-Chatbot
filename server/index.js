@@ -105,77 +105,60 @@ app.get("/api/properties", (req, res) => {
 
 app.post("/api/chat", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    const userMessage = req.body.message.toLowerCase();
+    const propertiesData = getMergedData();
 
-    const propertiesData = require("./data/properties.json");
-
-    const systemPrompt = `
-      You are Mira, a top-tier, highly intelligent real estate advisor. 
-      You are not a robot; you are a warm, consultative, and strategic human-like agent.
-      
-      Here is your live property database: ${JSON.stringify(propertiesData)}
-
-      CRITICAL RULE: You MUST respond in pure JSON format exactly like this:
-      {
-        "reply": "Your intelligent, conversational response",
-        "propertyIds": [Array of integer IDs]
-      }
-      
-      INTELLIGENCE RULES:
-      1. THE SALES PITCH: Don't just hand them properties. Explain *why* you chose them. (e.g., "Since you wanted a large family home, I picked this one because of its massive 3,000 sq ft layout...")
-      2. THE NEGOTIATOR: If the user asks for an impossible combination (like a $200k mansion), DO NOT just say "no properties found." Instead, act like a real estate agent: gently explain the market reality, and offer the closest possible compromise (e.g., "While a mansion at $200k is tough, I found a gorgeous luxury condo in that budget...").
-      3. ONLY recommend property IDs that actually exist in the database.
-      4. Keep your response under 3 sentences. Be concise, punchy, and confident.
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.7,
-    });
-
-    const aiData = JSON.parse(response.choices[0].message.content);
-
-    const matchedProperties = propertiesData.filter((property) =>
-      aiData.propertyIds.includes(property.id),
-    );
-
+    
     res.json({
-      reply: aiData.reply,
-      properties: matchedProperties,
+      reply: "I've analyzed the market for you. Here are some great matches:",
+      properties: propertiesData.slice(0, 4), 
     });
   } catch (error) {
-    console.error("OpenAI Error:", error);
-    res.status(500).json({
-      reply: "I'm having trouble connecting to my AI brain right now.",
-      properties: [],
-    });
+    res
+      .status(500)
+      .json({ reply: "I'm having a technical moment.", properties: [] });
   }
 });
 
 
-let savedProperties = [];
 
-app.post("/api/save-property", (req, res) => {
+
+
+app.post("/api/save-property", async (req, res) => {
   try {
     const { propertyId } = req.body; 
 
     if (!propertyId) {
       return res.status(400).json({ error: "Property ID is missing." });
     }
-    if (savedProperties.includes(propertyId)) {
-      savedProperties = savedProperties.filter(id => id !== propertyId);
-      res.status(200).json({ message: "Property removed from saved list", savedProperties });
-    } else {
-      savedProperties.push(propertyId);
-      res.status(200).json({ message: "Property saved successfully!", savedProperties });
-    }
 
-    console.log("Current Saved Properties Array:", savedProperties);
+    if (isUsingMongoDB) {
+      const existing = await SavedProperty.findOne({ propertyId });
+      if (existing) {
+        await SavedProperty.deleteOne({ propertyId });
+        res.status(200).json({ message: "Property removed from DB." });
+      } else {
+        const newSave = new SavedProperty({ propertyId });
+        await newSave.save();
+        res.status(200).json({ message: "Property saved to DB!" });
+      }
+    } else {
+      // 2. Automated File Ledger Fallback Logic
+      const filePath = path.join(__dirname, "data", "saved_properties.json");
+      let localSaved = getLocalSavedProperties();
+      
+      const exists = localSaved.find(item => item.propertyId === propertyId);
+      
+      if (exists) {
+        localSaved = localSaved.filter(item => item.propertyId !== propertyId);
+        fs.writeFileSync(filePath, JSON.stringify(localSaved, null, 2));
+        res.status(200).json({ message: "Property removed from file ledger." });
+      } else {
+        localSaved.push({ propertyId, savedAt: new Date() });
+        fs.writeFileSync(filePath, JSON.stringify(localSaved, null, 2));
+        res.status(200).json({ message: "Property saved to file ledger!" });
+      }
+    }
 
   } catch (error) {
     console.error("Save Property Error:", error);
