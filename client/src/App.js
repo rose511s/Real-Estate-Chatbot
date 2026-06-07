@@ -28,12 +28,7 @@ function App() {
  });
   const [activeTab, setActiveTab] = useState("search");
 
-  const [filters, setFilters] = useState({
-    location: "",
-    maxPrice: "",
-    bedrooms: "",
-    amenity: "",
-  });
+ 
   const [properties, setProperties] = useState([]);
   const [savedProperties, setSavedProperties] = useState([]);
   const [savedIds, setSavedIds] = useState([]);
@@ -62,14 +57,11 @@ function App() {
 
   const querySummary = useMemo(() => {
     const parts = [];
-    if (filters.location) parts.push(filters.location);
-    if (filters.maxPrice)
-      parts.push(
-        `Up to $${Number(filters.maxPrice).toLocaleString?.() || filters.maxPrice}`,
-      );
-    if (filters.bedrooms) parts.push(`${filters.bedrooms} bed`);
+    if (collectedInfo.location) parts.push(collectedInfo.location);
+    if (collectedInfo.budget) parts.push(`Up to $${collectedInfo.budget}`);
+    if (collectedInfo.bedrooms) parts.push(`${collectedInfo.bedrooms} bed`);
     return parts.join(" • ");
-  }, [filters]);
+  }, [collectedInfo]);
 
   const fetchProperties = async (finalFilters) => {
     try {
