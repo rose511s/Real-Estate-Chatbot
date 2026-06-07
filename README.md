@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 [README.md](https://github.com/user-attachments/files/28680365/README.md)
+=======
+>>>>>>> d045343 (Upgraded Mira to full OpenAI NLP)
 🏡 Mira: AI-Powered Real Estate Platform🚀
 The Vision (Approach)The goal of this project was to move beyond a simple static property listing site and build an intelligent, full-stack real estate assistant. I wanted to create a platform where users could converse naturally to find their dream homes, while simultaneously providing a seamless, highly responsive user interface.
 To achieve this, I chose the MERN Stack (MongoDB, Express, React, Node.js).

@@ -2,7 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const mongoose = require("mongoose"); 
+const mongoose = require("mongoose");
+
+require("dotenv").config();
+const OpenAI = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const app = express();
 app.use(cors());
@@ -96,31 +103,57 @@ app.get("/api/properties", (req, res) => {
   res.json(properties);
 });
 
-app.post("/api/save-property", async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   try {
-    const { propertyId } = req.body;
-    const pid = parseInt(propertyId, 10);
+    const userMessage = req.body.message;
 
-    if (isUsingMongoDB) {
-      const newSave = new SavedProperty({ propertyId: pid });
-      await newSave.save();
-    } else {
-      const localSaved = getLocalSavedProperties();
-      if (!localSaved.some((item) => item.propertyId === pid)) {
-        localSaved.push({ propertyId: pid, savedAt: new Date() });
-        fs.writeFileSync(
-          path.join(__dirname, "data", "saved_properties.json"),
-          JSON.stringify(localSaved, null, 2),
-        );
+    const propertiesData = require("./data/properties.json");
+
+    const systemPrompt = `
+      You are Mira, a top-tier, highly intelligent real estate advisor. 
+      You are not a robot; you are a warm, consultative, and strategic human-like agent.
+      
+      Here is your live property database: ${JSON.stringify(propertiesData)}
+
+      CRITICAL RULE: You MUST respond in pure JSON format exactly like this:
+      {
+        "reply": "Your intelligent, conversational response",
+        "propertyIds": [Array of integer IDs]
       }
-    }
+      
+      INTELLIGENCE RULES:
+      1. THE SALES PITCH: Don't just hand them properties. Explain *why* you chose them. (e.g., "Since you wanted a large family home, I picked this one because of its massive 3,000 sq ft layout...")
+      2. THE NEGOTIATOR: If the user asks for an impossible combination (like a $200k mansion), DO NOT just say "no properties found." Instead, act like a real estate agent: gently explain the market reality, and offer the closest possible compromise (e.g., "While a mansion at $200k is tough, I found a gorgeous luxury condo in that budget...").
+      3. ONLY recommend property IDs that actually exist in the database.
+      4. Keep your response under 3 sentences. Be concise, punchy, and confident.
+    `;
 
-    console.log(` Saved Preference Registered: Property ID -> ${pid}`);
-    res
-      .status(201)
-      .json({ message: "Property saved to database ledger successfully!" });
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.7,
+    });
+
+    const aiData = JSON.parse(response.choices[0].message.content);
+
+    const matchedProperties = propertiesData.filter((property) =>
+      aiData.propertyIds.includes(property.id),
+    );
+
+    res.json({
+      reply: aiData.reply,
+      properties: matchedProperties,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to save property" });
+    console.error("OpenAI Error:", error);
+    res.status(500).json({
+      reply: "I'm having trouble connecting to my AI brain right now.",
+      properties: [],
+    });
   }
 });
 
@@ -134,7 +167,6 @@ app.get("/api/saved-properties", async (req, res) => {
       savedList = getLocalSavedProperties();
     }
 
-
     const allProperties = getMergedData();
     const detailedSavedProperties = savedList
       .map((savedItem) => {
@@ -143,7 +175,6 @@ app.get("/api/saved-properties", async (req, res) => {
         );
       })
       .filter(Boolean);
-
 
     res.json(detailedSavedProperties);
   } catch (error) {
