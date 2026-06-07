@@ -25,6 +25,9 @@ function App() {
    location: "",
    budget: "",
    bedrooms: "",
+   bathrooms: "", 
+   size_sqft: "", 
+   amenity: "",
  });
   const [activeTab, setActiveTab] = useState("search");
 
@@ -117,36 +120,61 @@ function App() {
   };
 
   const handleSend = async (e) => {
-  e.preventDefault();
-  if (!input.trim()) return;
+    e.preventDefault();
+    if (!input.trim()) return;
 
-  const userText = input.trim();
-  setMessages((prev) => [...prev, { sender: "user", text: userText }]);
-  setInput("");
+    const userText = input.trim();
+    setMessages((prev) => [...prev, { sender: "user", text: userText }]);
+    setInput("");
 
-    
-  if (!collectedInfo.location) {
-    setCollectedInfo(prev => ({ ...prev, location: userText }));
-    setMessages(prev => [...prev, { sender: "bot", text: "Got it! Now, what is your maximum budget?" }]);
-  } else if (!collectedInfo.budget) {
-    setCollectedInfo(prev => ({ ...prev, budget: userText }));
-    setMessages(prev => [...prev, { sender: "bot", text: "Perfect. How many bedrooms do you need?" }]);
-  } else if (!collectedInfo.bedrooms) {
-    setCollectedInfo(prev => ({ ...prev, bedrooms: userText }));
-    setMessages(prev => [...prev, { sender: "bot", text: "One last thing: Do you have a specific amenity in mind? (e.g., pool, gym, parking)" }]);
-  } else if (!collectedInfo.amenity) {
-    const finalAmenity = userText;
-    setCollectedInfo(prev => ({ ...prev, amenity: finalAmenity }));
-    setMessages(prev => [...prev, { sender: "bot", text: "Searching for your perfect home..." }]);
-    
-    fetchProperties({ 
-      location: collectedInfo.location, 
-      maxPrice: collectedInfo.budget, 
-      bedrooms: collectedInfo.bedrooms,
-      amenity: finalAmenity 
-    });
-  }
-};
+    if (!collectedInfo.location) {
+      setCollectedInfo((prev) => ({ ...prev, location: userText }));
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Got it! What is your maximum budget?" },
+      ]);
+    } else if (!collectedInfo.budget) {
+      setCollectedInfo((prev) => ({ ...prev, budget: userText }));
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Perfect. How many bedrooms?" },
+      ]);
+    } else if (!collectedInfo.bedrooms) {
+      setCollectedInfo((prev) => ({ ...prev, bedrooms: userText }));
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "How many bathrooms do you need?" },
+      ]);
+    } else if (!collectedInfo.bathrooms) {
+      setCollectedInfo((prev) => ({ ...prev, bathrooms: userText }));
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "What minimum square footage are you looking for?",
+        },
+      ]);
+    } else if (!collectedInfo.size_sqft) {
+      setCollectedInfo((prev) => ({ ...prev, size_sqft: userText }));
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Any specific amenities? (e.g., Pool, Gym)" },
+      ]);
+    } else if (!collectedInfo.amenity) {
+      const finalAmenity = userText;
+      setCollectedInfo((prev) => ({ ...prev, amenity: finalAmenity }));
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Searching for your perfect home..." },
+      ]);
+      fetchProperties({
+        location: collectedInfo.location,
+        maxPrice: collectedInfo.budget,
+        bedrooms: collectedInfo.bedrooms,
+        amenity: finalAmenity,
+      });
+    }
+  };
 
   const saveProperty = async (id) => {
     try {

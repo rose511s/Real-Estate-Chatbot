@@ -98,6 +98,16 @@ app.get("/api/properties", (req, res) => {
   }
   if (bedrooms) {
     properties = properties.filter((p) => p.bedrooms === parseInt(bedrooms));
+  } // In index.js inside app.get("/api/properties")
+  if (req.query.bathrooms) {
+    properties = properties.filter(
+      (p) => p.bathrooms >= parseInt(req.query.bathrooms),
+    );
+  }
+  if (req.query.size_sqft) {
+    properties = properties.filter(
+      (p) => p.size_sqft >= parseInt(req.query.size_sqft),
+    );
   }
 
   res.json(properties);
