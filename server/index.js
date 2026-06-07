@@ -157,6 +157,32 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
+
+let savedProperties = [];
+
+app.post("/api/save-property", (req, res) => {
+  try {
+    const { propertyId } = req.body; 
+
+    if (!propertyId) {
+      return res.status(400).json({ error: "Property ID is missing." });
+    }
+    if (savedProperties.includes(propertyId)) {
+      savedProperties = savedProperties.filter(id => id !== propertyId);
+      res.status(200).json({ message: "Property removed from saved list", savedProperties });
+    } else {
+      savedProperties.push(propertyId);
+      res.status(200).json({ message: "Property saved successfully!", savedProperties });
+    }
+
+    console.log("Current Saved Properties Array:", savedProperties);
+
+  } catch (error) {
+    console.error("Save Property Error:", error);
+    res.status(500).json({ error: "Server refused to save the property." });
+  }
+});
+
 app.get("/api/saved-properties", async (req, res) => {
   try {
     let savedList = [];
